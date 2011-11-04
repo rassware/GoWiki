@@ -1,0 +1,1 @@
+Das ist mein erster Eintrag in mein Wiki, dass mit der Programmiersprache Go von Google geschrieben wurde!
