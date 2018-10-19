@@ -1,11 +1,10 @@
 package main
 
 import (
-	"http"
+	"net/http"
 	"io/ioutil"
-	"os"
 	"regexp"
-	"template"
+	"text/template"
 )
 
 type Page struct {
@@ -13,12 +12,12 @@ type Page struct {
 	Body  []byte
 }
 
-func (p *Page) save() os.Error {
+func (p *Page) save() error {
 	filename := "data/" + p.Title + ".txt"
 	return ioutil.WriteFile(filename, p.Body, 0600)
 }
 
-func loadPage(title string) (*Page, os.Error) {
+func loadPage(title string) (*Page, error) {
 	filename := "data/" + title + ".txt"
 	body, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -49,7 +48,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	p := &Page{Title: title, Body: []byte(body)}
 	err := p.save()
 	if err != nil {
-		http.Error(w, err.String(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, "/view/"+title, http.StatusFound)
@@ -64,7 +63,7 @@ var templates = make(map[string]*template.Template)
 
 func init() {
 	for _, tmpl := range []string{"edit", "view"} {
-		t := template.Must(template.ParseFile("tmpl/"+tmpl+".html"))
+		t := template.Must(template.ParseFiles("tmpl/"+tmpl+".html"))
 		templates[tmpl] = t
 	}
 }
@@ -72,7 +71,7 @@ func init() {
 func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 	err := templates[tmpl].Execute(w, p)
 	if err != nil {
-		http.Error(w, err.String(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
