@@ -4,17 +4,17 @@ import (
 	"net/http"
 	"io/ioutil"
 	"regexp"
-	"text/template"
+	"html/template"
 )
 
 type Page struct {
 	Title string
-	Body  []byte
+	Body  template.HTML
 }
 
 func (p *Page) save() error {
 	filename := "data/" + p.Title + ".txt"
-	return ioutil.WriteFile(filename, p.Body, 0600)
+	return ioutil.WriteFile(filename, []byte(p.Body), 0600)
 }
 
 func loadPage(title string) (*Page, error) {
@@ -23,7 +23,7 @@ func loadPage(title string) (*Page, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Page{Title: title, Body: body}, nil
+	return &Page{Title: title, Body: template.HTML(body)}, nil
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
@@ -32,6 +32,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
 		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
 		return
 	}
+	renderMarkdown(p)
 	renderTemplate(w, "view", p)
 }
 
@@ -45,7 +46,7 @@ func editHandler(w http.ResponseWriter, r *http.Request, title string) {
 
 func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	body := r.FormValue("body")
-	p := &Page{Title: title, Body: []byte(body)}
+	p := &Page{Title: title, Body: template.HTML(body)}
 	err := p.save()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -88,6 +89,31 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
 		}
 		fn(w, r, title)
 	}
+}
+
+func renderMarkdown(p *Page) {
+	var h1regexp = regexp.MustCompile("(?m)^# (.+) #")
+	p.Body = template.HTML(h1regexp.ReplaceAll([]byte(p.Body), []byte(`<h1>$1</h1>`)))
+	var h2regexp = regexp.MustCompile("(?m)^## (.+) ##")
+        p.Body = template.HTML(h2regexp.ReplaceAll([]byte(p.Body), []byte(`<h2>$1</h2>`)))
+	var h3regexp = regexp.MustCompile("(?m)^### (.+) ###")
+        p.Body = template.HTML(h3regexp.ReplaceAll([]byte(p.Body), []byte(`<h3>$1</h3>`)))
+	var h4regexp = regexp.MustCompile("(?m)^#### (.+) ####")
+        p.Body = template.HTML(h4regexp.ReplaceAll([]byte(p.Body), []byte(`<h4>$1</h4>`)))
+	var h5regexp = regexp.MustCompile("(?m)^##### (.+) #####")
+        p.Body = template.HTML(h5regexp.ReplaceAll([]byte(p.Body), []byte(`<h5>$1</h5>`)))
+	var h6regexp = regexp.MustCompile("(?m)^###### (.+) ######")
+        p.Body = template.HTML(h6regexp.ReplaceAll([]byte(p.Body), []byte(`<h5>$1</h5>`)))
+
+	var italicregexp = regexp.MustCompile(`(?m) \*(.+)\*`)
+        p.Body = template.HTML(italicregexp.ReplaceAll([]byte(p.Body), []byte(`<i>$1</i>`)))
+	var boldregexp = regexp.MustCompile(`(?m)\*\*(.+)\*\*`)
+        p.Body = template.HTML(boldregexp.ReplaceAll([]byte(p.Body), []byte(`<b>$1</b>`)))
+	var striketroughregexp = regexp.MustCompile("(?m)~(.+)~")
+        p.Body = template.HTML(striketroughregexp.ReplaceAll([]byte(p.Body), []byte(`<s>$1</s>`)))
+
+	var hrregexp = regexp.MustCompile(`(?m)^[*-_]{3,}$`)
+        p.Body = template.HTML(hrregexp.ReplaceAll([]byte(p.Body), []byte(`<hr>`)))
 }
 
 func main() {

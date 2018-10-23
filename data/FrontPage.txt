@@ -1,1 +1,19 @@
-Willkommen in meiner Go-Wiki!
+# Dies ist ein Test! #
+
+## Dies ist ein Test! ##
+
+
+## Noch ein Text! ##
+
+* Liste
+* Test
+* Kann das gehen?
+
+**Fett**
+
+*italic*
+
+
+
+Dies ist ein kleiner Test ob hr wirklich funktioniert.
+***
